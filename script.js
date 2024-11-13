@@ -1,3 +1,5 @@
+// script.js
+
 // Inicializar toasts
 const toastSuccessEl = document.getElementById('toast-success');
 const toastErrorEl = document.getElementById('toast-error');
@@ -5,55 +7,41 @@ const toastSuccess = new bootstrap.Toast(toastSuccessEl);
 const toastError = new bootstrap.Toast(toastErrorEl);
 
 // Função para exibir toast de sucesso
-function showSuccess(message = "Operação realizada com sucesso!") {
+const showSuccess = (message = "Operação realizada com sucesso!") => {
     toastSuccessEl.querySelector('.toast-body').textContent = message;
     toastSuccess.show();
 }
 
 // Função para exibir toast de erro
-function showError(message = "Ocorreu um erro. Verifique os dados e tente novamente.") {
+const showError = (message = "Ocorreu um erro. Verifique os dados e tente novamente.") => {
     toastErrorEl.querySelector('.toast-body').textContent = message;
     toastError.show();
 }
 
 /* Função que formata o campo de entrada como valor monetário */
-function formatarCampoMonetario(campo) {
-    // Remove tudo que não é dígito
+const formatarCampoMonetario = (campo) => {
     let valor = campo.value.replace(/\D/g, '');
 
-    // Se for vazio, define como 0
-    if (valor === '') {
-        valor = '0';
-    }
+    valor = valor || '0';
 
-    // Converte para número inteiro
-    let valorNumerico = parseInt(valor, 10);
+    let valorNumerico = parseInt(valor, 10) || 0;
 
-    // Se NaN, define como 0
-    if (isNaN(valorNumerico)) {
-        valorNumerico = 0;
-    }
-
-    // Divide por 100 para obter centavos
     valorNumerico = valorNumerico / 100;
 
-    // Formata para o padrão monetário brasileiro
-    let valorFormatado = valorNumerico.toLocaleString('pt-BR', {
+    const valorFormatado = valorNumerico.toLocaleString('pt-BR', {
         style: 'currency',
         currency: 'BRL'
     });
 
-    // Define o valor formatado
     campo.value = valorFormatado;
 
-    // Coloca o cursor no final
     campo.selectionStart = campo.selectionEnd = campo.value.length;
 }
 
 // Função para remover formatação monetária e retornar um número
-function obterValorNumerico(campo) {
-    let valor = campo.value.replace(/\D/g, '');
-    return parseFloat(valor) / 100 || 0;
+const obterValorNumerico = (campo) => {
+    const valor = parseFloat(campo.value.replace(/\D/g, '')) / 100 || 0;
+    return valor;
 }
 
 // Adicionar event listeners para os campos de faturamento
@@ -67,335 +55,292 @@ camposMonetarios.forEach(id => {
 });
 
 // Função para calcular e atualizar o Saldo em tempo real
-function atualizarSaldo() {
+const atualizarSaldo = () => {
     const qtdInicios = parseInt(document.getElementById("qtd-inicios").value, 10) || 0;
     const qtdCessadas = parseInt(document.getElementById("qtd-cessadas").value, 10) || 0;
     const ciclos = parseInt(document.getElementById("ciclos").value, 10) || 1;
     const grupos = parseInt(document.getElementById("grupos").value, 10) || 1;
 
+    let saldo = 0;
     if (ciclos > 0 && grupos > 0) {
-        const saldo = ((qtdInicios - qtdCessadas) / ciclos) / grupos;
-        document.getElementById("resultado-saldo").value = saldo.toFixed(2);
-    } else {
-        document.getElementById("resultado-saldo").value = "0.00";
+        saldo = ((qtdInicios - qtdCessadas) / ciclos) / grupos;
     }
+    document.getElementById("resultado-saldo").value = saldo.toFixed(2);
 }
 
 // Adicionar event listeners para campos que influenciam no Saldo
 const camposSaldo = ["qtd-inicios", "qtd-cessadas", "ciclos", "grupos"];
 camposSaldo.forEach(id => {
-    document.getElementById(id).addEventListener("input", () => {
+    const campo = document.getElementById(id);
+    campo.addEventListener("input", () => {
         atualizarSaldo();
         calcularPontuacao();
     });
-});
+})
 
 // Função para calcular a pontuação total
-function calcularPontuacao() {
+const calcularPontuacao = () => {
     // Captura dos valores de Faturamento
     const faturamentoRealizado = obterValorNumerico(document.getElementById("faturamento-realizado"));
     const faturamentoAcelerador = obterValorNumerico(document.getElementById("faturamento-acelerador"));
 
     // Calcula o Resultado de Faturamento
-    let porcentagemFaturamento = 0;
-    if (faturamentoAcelerador !== 0) {
-        porcentagemFaturamento = (faturamentoRealizado / faturamentoAcelerador) * 100;
-    }
-    document.getElementById("resultado-faturamento").value = porcentagemFaturamento.toFixed(2) + "%";
+    let porcentagemFaturamento = faturamentoAcelerador ? (faturamentoRealizado / faturamentoAcelerador) * 100 : 0;
+    document.getElementById("resultado-faturamento").value = `${porcentagemFaturamento.toFixed(2)}%`;
 
     // Calcula os Pontos de Faturamento
     let pontosFaturamento = 0;
-    if (porcentagemFaturamento >= 102.5) {
-        pontosFaturamento = 4;
-    } else if (porcentagemFaturamento >= 97.5 && porcentagemFaturamento < 102.5) {
-        pontosFaturamento = 2;
-    }
+    if (porcentagemFaturamento >= 102.5) pontosFaturamento = 4;
+    else if (porcentagemFaturamento >= 97.5) pontosFaturamento = 2;
     document.getElementById("pontos-faturamento").innerText = pontosFaturamento;
 
     // Captura dos valores de Ativas
     const ativasRealizado = parseInt(document.getElementById("ativas-realizado").value, 10) || 0;
     const ativasAcelerador = parseInt(document.getElementById("ativas-acelerador").value, 10) || 0;
-    let porcentagemAtivas = 0;
-    if (ativasAcelerador !== 0) {
-        porcentagemAtivas = (ativasRealizado / ativasAcelerador) * 100;
-    }
-    document.getElementById("resultado-ativas").value = porcentagemAtivas.toFixed(2) + "%";
+    let porcentagemAtivas = ativasAcelerador ? (ativasRealizado / ativasAcelerador) * 100 : 0;
+    document.getElementById("resultado-ativas").value = `${porcentagemAtivas.toFixed(2)}%`;
     let pontosAtivas = 0;
-    if (porcentagemAtivas >= 102.5) {
-        pontosAtivas = 4;
-    } else if (porcentagemAtivas >= 97.5 && porcentagemAtivas < 102.5) {
-        pontosAtivas = 2;
-    }
+    if (porcentagemAtivas >= 102.5) pontosAtivas = 4;
+    else if (porcentagemAtivas >= 97.5) pontosAtivas = 2;
     document.getElementById("pontos-ativas").innerText = pontosAtivas;
 
     // Captura dos valores de Cadastro Prata+
     const cadastroPrataRealizado = parseInt(document.getElementById("cadastro-prata-realizado").value, 10) || 0;
     const cadastroPrataAcelerador = parseInt(document.getElementById("cadastro-prata-acelerador").value, 10) || 0;
-    let porcentagemCadastroPrata = 0;
-    if (cadastroPrataAcelerador !== 0) {
-        porcentagemCadastroPrata = (cadastroPrataRealizado / cadastroPrataAcelerador) * 100;
-    }
-    document.getElementById("resultado-cadastro-prata").value = porcentagemCadastroPrata.toFixed(2) + "%";
+    let porcentagemCadastroPrata = cadastroPrataAcelerador ? (cadastroPrataRealizado / cadastroPrataAcelerador) * 100 : 0;
+    document.getElementById("resultado-cadastro-prata").value = `${porcentagemCadastroPrata.toFixed(2)}%`;
     let pontosCadastroPrata = 0;
-    if (porcentagemCadastroPrata >= 102.5) {
-        pontosCadastroPrata = 2;
-    } else if (porcentagemCadastroPrata >= 97.5 && porcentagemCadastroPrata < 102.5) {
-        pontosCadastroPrata = 1;
-    }
+    if (porcentagemCadastroPrata >= 102.5) pontosCadastroPrata = 2;
+    else if (porcentagemCadastroPrata >= 97.5) pontosCadastroPrata = 1;
     document.getElementById("pontos-cadastro-prata").innerText = pontosCadastroPrata;
 
     // Cálculo do Saldo
+    atualizarSaldo();
     const saldo = parseFloat(document.getElementById("resultado-saldo").value) || 0;
     let pontosSaldo = 0;
-    if (saldo >= 1) {
-        pontosSaldo = 2;
-    } else if (saldo >= 0 && saldo < 1) {
-        pontosSaldo = 1;
-    }
-    // Saldo negativo recebe 0 pontos
+    if (saldo >= 1) pontosSaldo = 2;
+    else if (saldo >= 0) pontosSaldo = 1;
     document.getElementById("pontos-saldo").innerText = pontosSaldo;
 
     // Cálculo para Ativas CPV
     const ativasCpvRealizado = parseInt(document.getElementById("ativas-cpv-realizado").value, 10) || 0;
     const ativasCpvAcelerador = parseInt(document.getElementById("ativas-cpv-acelerador").value, 10) || 0;
-    let porcentagemAtivasCpv = 0;
-    if (ativasCpvAcelerador !== 0) {
-        porcentagemAtivasCpv = (ativasCpvRealizado / ativasCpvAcelerador) * 100;
-    }
-    document.getElementById("resultado-ativas-cpv").value = porcentagemAtivasCpv.toFixed(2) + "%";
+    let porcentagemAtivasCpv = ativasCpvAcelerador ? (ativasCpvRealizado / ativasCpvAcelerador) * 100 : 0;
+    document.getElementById("resultado-ativas-cpv").value = `${porcentagemAtivasCpv.toFixed(2)}%`;
     let pontosAtivasCpv = 0;
-    if (porcentagemAtivasCpv >= 102.5) {
-        pontosAtivasCpv = 2;
-    } else if (porcentagemAtivasCpv >= 97.5 && porcentagemAtivasCpv < 102.5) {
-        pontosAtivasCpv = 1;
-    }
+    if (porcentagemAtivasCpv >= 102.5) pontosAtivasCpv = 2;
+    else if (porcentagemAtivasCpv >= 97.5) pontosAtivasCpv = 1;
     document.getElementById("pontos-ativas-cpv").innerText = pontosAtivasCpv;
 
     // Cálculo para Ativas Mistas
     const ativasMistasRealizado = parseInt(document.getElementById("ativas-mistas-realizado").value, 10) || 0;
     const ativasMistasAcelerador = parseInt(document.getElementById("ativas-mistas-acelerador").value, 10) || 0;
-    let porcentagemAtivasMistas = 0;
-    if (ativasMistasAcelerador !== 0) {
-        porcentagemAtivasMistas = (ativasMistasRealizado / ativasMistasAcelerador) * 100;
-    }
-    document.getElementById("resultado-ativas-mistas").value = porcentagemAtivasMistas.toFixed(2) + "%";
+    let porcentagemAtivasMistas = ativasMistasAcelerador ? (ativasMistasRealizado / ativasMistasAcelerador) * 100 : 0;
+    document.getElementById("resultado-ativas-mistas").value = `${porcentagemAtivasMistas.toFixed(2)}%`;
     let pontosAtivasMistas = 0;
-    if (porcentagemAtivasMistas >= 102.5) {
-        pontosAtivasMistas = 2;
-    } else if (porcentagemAtivasMistas >= 97.5 && porcentagemAtivasMistas < 102.5) {
-        pontosAtivasMistas = 1;
-    }
+    if (porcentagemAtivasMistas >= 102.5) pontosAtivasMistas = 2;
+    else if (porcentagemAtivasMistas >= 97.5) pontosAtivasMistas = 1;
     document.getElementById("pontos-ativas-mistas").innerText = pontosAtivasMistas;
 
     // Cálculo para Líderes em IAP
     const totalLideresIap = parseInt(document.getElementById("total-lideres-iap").value, 10) || 0;
     const lideresComPontos = parseInt(document.getElementById("lideres-com-pontos").value, 10) || 0;
-    let porcentagemLideresIap = 0;
-    if (totalLideresIap !== 0) {
-        porcentagemLideresIap = (lideresComPontos / totalLideresIap) * 100;
-    }
-    document.getElementById("resultado-lideres-iap").value = porcentagemLideresIap.toFixed(2) + "%";
+    let porcentagemLideresIap = totalLideresIap ? (lideresComPontos / totalLideresIap) * 100 : 0;
+    document.getElementById("resultado-lideres-iap").value = `${porcentagemLideresIap.toFixed(2)}%`;
     let pontosLideresIap = 0;
-    if (porcentagemLideresIap >= 90) {
-        pontosLideresIap = 2;
-    } else if (porcentagemLideresIap >= 75 && porcentagemLideresIap < 90) {
-        pontosLideresIap = 1;
-    }
+    if (porcentagemLideresIap >= 90) pontosLideresIap = 2;
+    else if (porcentagemLideresIap >= 75) pontosLideresIap = 1;
     document.getElementById("pontos-lideres-iap").innerText = pontosLideresIap;
 
     // Cálculo da pontuação total
-    let pontuacao = pontosFaturamento + pontosAtivas + pontosCadastroPrata + pontosSaldo + pontosAtivasCpv + pontosAtivasMistas + pontosLideresIap;
+    const pontuacao = pontosFaturamento + pontosAtivas + pontosCadastroPrata + pontosSaldo + pontosAtivasCpv + pontosAtivasMistas + pontosLideresIap;
 
     // Atualizar o resultado na página
-    if (isNaN(pontuacao)) {
-        document.getElementById("pontuacao").innerText = "Erro no cálculo";
-    } else {
-        document.getElementById("pontuacao").innerText = pontuacao.toFixed(2);
-    }
+    document.getElementById("pontuacao").innerText = isNaN(pontuacao) ? "Erro no cálculo" : pontuacao.toFixed(2);
 }
 
-// Função para salvar dados em XML
-function saveToXML() {
+// Função para salvar dados em JSON
+const saveToJSON = () => {
+    console.log("Função saveToJSON chamada");
+
     // Captura dos valores
+    const getValue = (id, parseFunc = parseInt, defaultValue = 0) => {
+        const value = document.getElementById(id).value;
+        return parseFunc(value, 10) || defaultValue;
+    }
+
     const faturamentoRealizado = obterValorNumerico(document.getElementById("faturamento-realizado"));
     const faturamentoAcelerador = obterValorNumerico(document.getElementById("faturamento-acelerador"));
-    const ativasRealizado = parseInt(document.getElementById("ativas-realizado").value, 10) || 0;
-    const ativasAcelerador = parseInt(document.getElementById("ativas-acelerador").value, 10) || 0;
-    const cadastroPrataRealizado = parseInt(document.getElementById("cadastro-prata-realizado").value, 10) || 0;
-    const cadastroPrataAcelerador = parseInt(document.getElementById("cadastro-prata-acelerador").value, 10) || 0;
-    const qtdInicios = parseInt(document.getElementById("qtd-inicios").value, 10) || 0;
-    const qtdCessadas = parseInt(document.getElementById("qtd-cessadas").value, 10) || 0;
-    const ciclos = parseInt(document.getElementById("ciclos").value, 10) || 1;
-    const grupos = parseInt(document.getElementById("grupos").value, 10) || 1;
+    const ativasRealizado = getValue("ativas-realizado");
+    const ativasAcelerador = getValue("ativas-acelerador");
+    const cadastroPrataRealizado = getValue("cadastro-prata-realizado");
+    const cadastroPrataAcelerador = getValue("cadastro-prata-acelerador");
+    const qtdInicios = getValue("qtd-inicios");
+    const qtdCessadas = getValue("qtd-cessadas");
+    const ciclos = getValue("ciclos", parseInt, 1);
+    const grupos = getValue("grupos", parseInt, 1);
     const saldo = parseFloat(document.getElementById("resultado-saldo").value) || 0;
-    const ativasCpvRealizado = parseInt(document.getElementById("ativas-cpv-realizado").value, 10) || 0;
-    const ativasCpvAcelerador = parseInt(document.getElementById("ativas-cpv-acelerador").value, 10) || 0;
-    const ativasMistasRealizado = parseInt(document.getElementById("ativas-mistas-realizado").value, 10) || 0;
-    const ativasMistasAcelerador = parseInt(document.getElementById("ativas-mistas-acelerador").value, 10) || 0;
-    const totalLideresIap = parseInt(document.getElementById("total-lideres-iap").value, 10) || 0;
-    const lideresComPontos = parseInt(document.getElementById("lideres-com-pontos").value, 10) || 0;
+    const ativasCpvRealizado = getValue("ativas-cpv-realizado");
+    const ativasCpvAcelerador = getValue("ativas-cpv-acelerador");
+    const ativasMistasRealizado = getValue("ativas-mistas-realizado");
+    const ativasMistasAcelerador = getValue("ativas-mistas-acelerador");
+    const totalLideresIap = getValue("total-lideres-iap");
+    const lideresComPontos = getValue("lideres-com-pontos");
+
+    console.log("Dados capturados:", {
+        faturamentoRealizado,
+        faturamentoAcelerador,
+        ativasRealizado,
+        ativasAcelerador,
+        cadastroPrataRealizado,
+        cadastroPrataAcelerador,
+        qtdInicios,
+        qtdCessadas,
+        ciclos,
+        grupos,
+        saldo,
+        ativasCpvRealizado,
+        ativasCpvAcelerador,
+        ativasMistasRealizado,
+        ativasMistasAcelerador,
+        totalLideresIap,
+        lideresComPontos
+    });
 
     // Validação de entradas antes de salvar
-    if (
-        ciclos <= 0 ||
-        grupos <= 0 ||
-        lideresComPontos > totalLideresIap
-    ) {
+    if (ciclos <= 0 || grupos <= 0 || lideresComPontos > totalLideresIap) {
         showError("Por favor, verifique os valores inseridos antes de salvar.");
+        console.error("Validação falhou: ciclos <= 0 || grupos <= 0 || lideresComPontos > totalLideresIap");
         return;
     }
 
-    // Criar o documento XML
-    let xmlDoc = document.implementation.createDocument("", "", null);
-
-    // Elemento raiz
-    let root = xmlDoc.createElement("SimulacaoIAP");
-    xmlDoc.appendChild(root);
-
-    // Função auxiliar para adicionar elementos
-    function addElement(parent, tag, value) {
-        let elem = xmlDoc.createElement(tag);
-        elem.textContent = value;
-        parent.appendChild(elem);
+    // Criar o objeto JSON
+    const dados = {
+        FaturamentoRealizado: faturamentoRealizado,
+        FaturamentoAcelerador: faturamentoAcelerador,
+        AtivasRealizado: ativasRealizado,
+        AtivasAcelerador: ativasAcelerador,
+        CadastroPrataRealizado: cadastroPrataRealizado,
+        CadastroPrataAcelerador: cadastroPrataAcelerador,
+        QtdInicios: qtdInicios,
+        QtdCessadas: qtdCessadas,
+        Ciclos: ciclos,
+        Grupos: grupos,
+        Saldo: saldo,
+        AtivasCPVRealizado: ativasCpvRealizado,
+        AtivasCPVAcelerador: ativasCpvAcelerador,
+        AtivasMistasRealizado: ativasMistasRealizado,
+        AtivasMistasAcelerador: ativasMistasAcelerador,
+        TotalLideresIAP: totalLideresIap,
+        LideresComPontos: lideresComPontos
     }
 
-    // Adicionar dados ao XML
-    addElement(root, "FaturamentoRealizado", faturamentoRealizado);
-    addElement(root, "FaturamentoAcelerador", faturamentoAcelerador);
-    addElement(root, "AtivasRealizado", ativasRealizado);
-    addElement(root, "AtivasAcelerador", ativasAcelerador);
-    addElement(root, "CadastroPrataRealizado", cadastroPrataRealizado);
-    addElement(root, "CadastroPrataAcelerador", cadastroPrataAcelerador);
-    addElement(root, "QtdInicios", qtdInicios);
-    addElement(root, "QtdCessadas", qtdCessadas);
-    addElement(root, "Ciclos", ciclos);
-    addElement(root, "Grupos", grupos);
-    addElement(root, "Saldo", saldo);
-    addElement(root, "AtivasCPVRealizado", ativasCpvRealizado);
-    addElement(root, "AtivasCPVAcelerador", ativasCpvAcelerador);
-    addElement(root, "AtivasMistasRealizado", ativasMistasRealizado);
-    addElement(root, "AtivasMistasAcelerador", ativasMistasAcelerador);
-    addElement(root, "TotalLideresIAP", totalLideresIap);
-    addElement(root, "LideresComPontos", lideresComPontos);
+    console.log("Objeto JSON criado:", dados);
 
-    // Converter o XML para string
-    let serializer = new XMLSerializer();
-    let xmlString = serializer.serializeToString(xmlDoc);
+    // Converter o objeto JSON para string
+    const jsonString = JSON.stringify(dados, null, 4); // Indentação para legibilidade
 
-    // Criar um Blob com o XML
-    let blob = new Blob([xmlString], { type: "application/xml" });
+    // Criar um Blob com o JSON
+    const blob = new Blob([jsonString], { type: "application/json" });
 
     // Criar um link para download
-    let link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "data.xml";
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = "data.json";
 
     // Adicionar o link ao documento e clicar nele
     document.body.appendChild(link);
     link.click();
 
-    // Remover o link
+    // Remover o link e revogar a URL
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
     // Mostrar toast de sucesso
-    showSuccess("Dados salvos com sucesso como data.xml!");
+    showSuccess("Dados salvos com sucesso como data.json!");
 }
 
-// Função para carregar dados de XML
-function loadFromXML(event) {
+// Função para carregar dados de JSON
+const loadFromJSON = (event) => {
     const file = event.target.files[0];
-    if (!file) {
-        return;
-    }
+    if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function(e) {
-        const contents = e.target.result;
-        parseXML(contents);
-    };
+    reader.onload = (e) => parseJSON(e.target.result);
     reader.readAsText(file);
 }
 
-function parseXML(xmlStr) {
-    let parser = new DOMParser();
-    let xmlDoc = parser.parseFromString(xmlStr, "application/xml");
+const parseJSON = (jsonStr) => {
+    try {
+        const dados = JSON.parse(jsonStr);
 
-    // Verificar se há erros de parsing
-    if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
-        showError("Erro ao analisar o arquivo XML. Verifique se o arquivo está correto.");
-        return;
+        console.log("Dados carregados do JSON:", dados);
+
+        // Validação básica dos dados
+        const requiredFields = [
+            "FaturamentoRealizado",
+            "FaturamentoAcelerador",
+            "AtivasRealizado",
+            "AtivasAcelerador",
+            "CadastroPrataRealizado",
+            "CadastroPrataAcelerador",
+            "QtdInicios",
+            "QtdCessadas",
+            "Ciclos",
+            "Grupos",
+            "Saldo",
+            "AtivasCPVRealizado",
+            "AtivasCPVAcelerador",
+            "AtivasMistasRealizado",
+            "AtivasMistasAcelerador",
+            "TotalLideresIAP",
+            "LideresComPontos"
+        ];
+
+        for (const field of requiredFields) {
+            if (!(field in dados)) {
+                throw new Error(`Campo ausente no JSON: ${field}`);
+            }
+        }
+
+        // Preencher os campos do formulário
+        document.getElementById("faturamento-realizado").value = formatarValorCarregado(dados.FaturamentoRealizado);
+        document.getElementById("faturamento-acelerador").value = formatarValorCarregado(dados.FaturamentoAcelerador);
+        document.getElementById("ativas-realizado").value = dados.AtivasRealizado;
+        document.getElementById("ativas-acelerador").value = dados.AtivasAcelerador;
+        document.getElementById("cadastro-prata-realizado").value = dados.CadastroPrataRealizado;
+        document.getElementById("cadastro-prata-acelerador").value = dados.CadastroPrataAcelerador;
+        document.getElementById("qtd-inicios").value = dados.QtdInicios;
+        document.getElementById("qtd-cessadas").value = dados.QtdCessadas;
+        document.getElementById("ciclos").value = dados.Ciclos;
+        document.getElementById("grupos").value = dados.Grupos;
+        document.getElementById("resultado-saldo").value = dados.Saldo.toFixed(2);
+        document.getElementById("ativas-cpv-realizado").value = dados.AtivasCPVRealizado;
+        document.getElementById("ativas-cpv-acelerador").value = dados.AtivasCPVAcelerador;
+        document.getElementById("ativas-mistas-realizado").value = dados.AtivasMistasRealizado;
+        document.getElementById("ativas-mistas-acelerador").value = dados.AtivasMistasAcelerador;
+        document.getElementById("total-lideres-iap").value = dados.TotalLideresIAP;
+        document.getElementById("lideres-com-pontos").value = dados.LideresComPontos;
+
+        // Reaplicar a formatação monetária nos campos carregados
+        camposMonetarios.forEach(id => formatarCampoMonetario(document.getElementById(id)));
+
+        // Recalcular a pontuação automaticamente após carregar os dados
+        calcularPontuacao();
+
+        // Mostrar toast de sucesso
+        showSuccess("Dados carregados com sucesso!");
+    } catch (error) {
+        showError(`Erro ao carregar JSON: ${error.message}`);
+        console.error("Erro ao carregar JSON:", error);
     }
-
-    // Função auxiliar para obter o texto de um elemento
-    function getElementText(tag) {
-        let elems = xmlDoc.getElementsByTagName(tag);
-        return elems.length > 0 ? elems[0].textContent : "";
-    }
-
-    // Extrair dados do XML
-    const faturamentoRealizado = getElementText("FaturamentoRealizado");
-    const faturamentoAcelerador = getElementText("FaturamentoAcelerador");
-    const ativasRealizado = getElementText("AtivasRealizado");
-    const ativasAcelerador = getElementText("AtivasAcelerador");
-    const cadastroPrataRealizado = getElementText("CadastroPrataRealizado");
-    const cadastroPrataAcelerador = getElementText("CadastroPrataAcelerador");
-    const qtdInicios = getElementText("QtdInicios");
-    const qtdCessadas = getElementText("QtdCessadas");
-    const ciclos = getElementText("Ciclos");
-    const grupos = getElementText("Grupos");
-    const saldo = getElementText("Saldo");
-    const ativasCpvRealizado = getElementText("AtivasCPVRealizado");
-    const ativasCpvAcelerador = getElementText("AtivasCPVAcelerador");
-    const ativasMistasRealizado = getElementText("AtivasMistasRealizado");
-    const ativasMistasAcelerador = getElementText("AtivasMistasAcelerador");
-    const totalLideresIap = getElementText("TotalLideresIAP");
-    const lideresComPontos = getElementText("LideresComPontos");
-
-    // Preencher os campos do formulário
-    document.getElementById("faturamento-realizado").value = formatarValorCarregado(faturamentoRealizado);
-    document.getElementById("faturamento-acelerador").value = formatarValorCarregado(faturamentoAcelerador);
-    document.getElementById("ativas-realizado").value = ativasRealizado;
-    document.getElementById("ativas-acelerador").value = ativasAcelerador;
-    document.getElementById("cadastro-prata-realizado").value = cadastroPrataRealizado;
-    document.getElementById("cadastro-prata-acelerador").value = cadastroPrataAcelerador;
-    document.getElementById("qtd-inicios").value = qtdInicios;
-    document.getElementById("qtd-cessadas").value = qtdCessadas;
-    document.getElementById("ciclos").value = ciclos;
-    document.getElementById("grupos").value = grupos;
-    document.getElementById("resultado-saldo").value = saldo;
-    document.getElementById("ativas-cpv-realizado").value = ativasCpvRealizado;
-    document.getElementById("ativas-cpv-acelerador").value = ativasCpvAcelerador;
-    document.getElementById("ativas-mistas-realizado").value = ativasMistasRealizado;
-    document.getElementById("ativas-mistas-acelerador").value = ativasMistasAcelerador;
-    document.getElementById("total-lideres-iap").value = totalLideresIap;
-    document.getElementById("lideres-com-pontos").value = lideresComPontos;
-
-    // Reaplicar a formatação monetária nos campos carregados
-    formatarCampoMonetario(document.getElementById("faturamento-realizado"));
-    formatarCampoMonetario(document.getElementById("faturamento-acelerador"));
-
-    // Recalcular a pontuação automaticamente após carregar os dados
-    calcularPontuacao();
-
-    // Mostrar toast de sucesso
-    showSuccess("Dados carregados com sucesso!");
 }
 
-// Função para formatar valores carregados (remover R$ e formatar corretamente)
-function formatarValorCarregado(valor) {
-    // Remove R$ e espaços
-    valor = valor.replace(/R\$\s?/, '');
-
-    // Remove pontos e substitui vírgula por ponto
-    valor = valor.replace(/\./g, '').replace(',', '.');
-
-    // Converte para número
-    let numero = parseFloat(valor);
-    if (isNaN(numero)) {
-        numero = 0;
-    }
-
-    // Formata novamente para o padrão monetário
+// Função para formatar valores carregados (assume que valor é um número)
+const formatarValorCarregado = (valor) => {
+    // Assume que valor é um número, formata para moeda
+    const numero = parseFloat(valor) || 0;
     return numero.toLocaleString('pt-BR', {
         style: 'currency',
         currency: 'BRL'
@@ -433,4 +378,22 @@ camposPontuacao.forEach(id => {
 camposMonetarios.forEach(id => {
     const elemento = document.getElementById(id);
     elemento.addEventListener("input", calcularPontuacao);
+});
+
+// Adicionar event listeners para os botões após o DOM estar carregado
+document.addEventListener("DOMContentLoaded", () => {
+    const btnSalvar = document.getElementById("btn-salvar-dados");
+    const inputLoad = document.getElementById("load-input");
+
+    if (btnSalvar) {
+        btnSalvar.addEventListener("click", saveToJSON);
+    } else {
+        console.error("Botão 'Salvar Dados' não encontrado!");
+    }
+
+    if (inputLoad) {
+        inputLoad.addEventListener("change", loadFromJSON);
+    } else {
+        console.error("Input 'Carregar Dados' não encontrado!");
+    }
 });
